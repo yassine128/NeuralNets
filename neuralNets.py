@@ -1,6 +1,6 @@
 import numpy as np 
 
-class Activation():         
+class Activation:         
     def sgn(self): 
         return lambda sum_value: 1 if sum_value > 0 else -1 
         
@@ -20,7 +20,9 @@ class Perceptron:
         return np.linalg.norm(data)
         
     def output(self, input: np.array) -> float: 
-        return self.activation(self.weights.dot(input.T) - self.threshold)
+        if len(input) != self.size:
+            raise ValueError("Input size does not match perceptron size.")
+        return self.activation(self.weights.dot(input) - self.threshold)
     
     def updateWeights(self, pred: int, label: int, alpha: float, data: list) -> None: 
         e = (label - pred) / 2 
@@ -41,3 +43,39 @@ class Perceptron:
                     total_loss += self.loss(label, data)
                     self.updateWeights(pred, label, alpha, data)
                 self.losses.append(total_loss / len(dataset))
+
+
+class MLP: 
+    # First Layer (0) : Input Layer 
+    # Second Layer ... (n-1) : Hidden Layers 
+    # Last Layer (n) : Output Layer 
+    # Ex: [2, 3, 1]
+    def __init__(self, layers_size: list[int]): 
+        self.layers_size = layers_size 
+        self.layers = []
+        for i in range(1, len(layers_size)): 
+            layer = []
+            for j in range(layers_size[i]): 
+                layer.append(Perceptron(layers_size[i - 1], Activation().sigmoid()))
+            self.layers.append(layer.copy())
+
+    def info(self): 
+        for layer, i in zip(self.layers, range(len(self.layers))):
+            print(f"\n Layer {i+1}: ")
+            for perceptron in layer: 
+                print(f"\t size_input={perceptron.size}, activation={perceptron.activation.__qualname__.split('.')[1]}", end=", ")
+
+    def forward(self, input_data):
+        for layer in self.layers:
+            output_layer = []
+            for perceptron in layer: 
+                output_layer.append(perceptron.output(input_data)) 
+            input_data = output_layer.copy()
+        return input_data
+            
+    def backProp(self): 
+        pass 
+       
+            
+        
+        
