@@ -6,6 +6,9 @@ class Activation:
         
     def sigmoid(self): 
         return lambda sum_value: 1 / (1 + np.exp(-np.clip(sum_value, -500, 500)))
+    
+    def sigmoid_derivative(self, x): 
+        return x * (1 - x)
         
 
 class Perceptron: 
@@ -15,9 +18,6 @@ class Perceptron:
         self.threshold = 0
         self.losses = []
         self.activation = activation
-
-    def normalize(self, data): 
-        return np.linalg.norm(data)
         
     def output(self, input: np.array) -> float: 
         if len(input) != self.size:
@@ -64,18 +64,45 @@ class MLP:
             print(f"\n Layer {i+1}: ")
             for perceptron in layer: 
                 print(f"\t size_input={perceptron.size}, activation={perceptron.activation.__qualname__.split('.')[1]}", end=", ")
-
+    
     def forward(self, input_data):
+        self.inputs_forward = [input_data.copy()]
         for layer in self.layers:
             output_layer = []
             for perceptron in layer: 
                 output_layer.append(perceptron.output(input_data)) 
+            self.inputs_forward.append(output_layer.copy()) 
             input_data = output_layer.copy()
+        self.inputs_forward = self.inputs_forward[:-1]
         return input_data
             
-    def backProp(self): 
-        pass 
-       
+    def backward(self, input_data, predicted_output, true_label, learning_rate):
+        # Calculate the initial error at the output layer
+        output_layer = self.layers[-1]
+        a = Activation()
+        for perceptron, predicted_value in zip(output_layer, predicted_output):
+            delta = (true_label - predicted_value) * a.sigmoid_derivative(predicted_value)
+            for i in range(len(perceptron.weights)):
+                perceptron.weights[i] += learning_rate * delta * self.inputs_forward[-1][i]
+            perceptron.threshold -= learning_rate * delta
+        
+        # Backpropagate the error through hidden layers
+        for layer_idx in range(len(self.layers) - 2, -1, -1):
+            layer = self.layers[layer_idx]
+            next_layer = self.layers[layer_idx + 1]
+            next_deltas = [a.sigmoid_derivative(output) for output in self.inputs_forward[layer_idx + 1]]
             
+            for perceptron_idx, perceptron in enumerate(layer):
+                delta = sum([next_deltas[next_idx] * next_layer[next_idx].weights[perceptron_idx] for next_idx in range(len(next_layer))])
+                delta *= a.sigmoid_derivative(self.inputs_forward[layer_idx][perceptron_idx])
+                
+                for i in range(len(perceptron.weights)):
+                    perceptron.weights[i] += learning_rate * delta * self.inputs_forward[layer_idx][i]
+                perceptron.threshold -= learning_rate * delta
         
-        
+    def train(self, input_data, labels, learning_rate, epochs):
+        for _ in range(epochs):
+            for data, label in zip(input_data, labels):
+                predicted_output = self.forward(data)
+                self.backward(data, predicted_output, label, learning_rate)
+
