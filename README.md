@@ -1,5 +1,5 @@
 # Neural Networks
-Learned from : ![Machine learning with neural networks](https://arxiv.org/pdf/1901.05639.pdf) 
+Learned from : <a href="https://arxiv.org/pdf/1901.05639.pdf">Machine learning with neural networks</a>
 ## Perceptron Model Applied to Random Data
 <div style="display: flex; justify-content: space-between;">
   <img src="https://github.com/yassine128/NeuralNets/blob/main/img/evolution.gif" alt="Perceptron Evolution" width="400">
